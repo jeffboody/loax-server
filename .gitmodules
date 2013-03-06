@@ -1,0 +1,15 @@
+[submodule "project/jni/net"]
+	path = project/jni/net
+	url = git@github.com:jeffboody/net
+[submodule "project/jni/a3d"]
+	path = project/jni/a3d
+	url = git@github.com:jeffboody/a3d-native
+[submodule "project/src/com/jeffboody/a3d"]
+	path = project/src/com/jeffboody/a3d
+	url = git@github.com:jeffboody/a3d-java
+[submodule "fonts"]
+	path = fonts
+	url = git@github.com:jeffboody/a3d-fonts
+[submodule "project/jni/loax"]
+	path = project/jni/loax
+	url = git@github.com:jeffboody/loax
