@@ -26,6 +26,7 @@ package com.jeffboody.LOAXServer;
 import android.util.Log;
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
 import com.jeffboody.a3d.A3DSurfaceView;
@@ -38,6 +39,9 @@ public class LOAXServer extends Activity
 
 	private A3DNativeRenderer Renderer;
 	private A3DSurfaceView    Surface;
+
+	private native void NativeKeyDown(int keycode, int meta);
+	private native void NativeKeyUp(int keycode, int meta);
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -78,6 +82,20 @@ public class LOAXServer extends Activity
 		Surface = null;
 		Renderer = null;
 		super.onDestroy();
+	}
+
+	@Override
+	public boolean onKeyDown(int keycode, KeyEvent event)
+	{
+		NativeKeyDown(keycode, event.getMetaState());
+		return true;
+	}
+
+	@Override
+	public boolean onKeyUp(int keycode, KeyEvent event)
+	{
+		NativeKeyUp(keycode, event.getMetaState());
+		return true;
 	}
 
 	static

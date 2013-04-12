@@ -181,3 +181,25 @@ JNIEXPORT int JNICALL Java_com_jeffboody_a3d_A3DNativeRenderer_NativeClientVersi
 	LOGD("debug");
 	return 2;
 }
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyDown(JNIEnv* env, jobject  obj, jint keycode, jint meta)
+{
+	assert(env);
+	LOGD("debug keycode=0x%X, meta=0x%X", keycode, meta);
+
+	if(loax_renderer)
+	{
+		loax_server_keydown(loax_renderer->server, keycode, meta);
+	}
+}
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyUp(JNIEnv* env, jobject  obj, jint keycode, jint meta)
+{
+	assert(env);
+	LOGD("debug keycode=0x%X, meta=0x%X", keycode, meta);
+
+	if(loax_renderer)
+	{
+		loax_server_keyup(loax_renderer->server, keycode, meta);
+	}
+}
