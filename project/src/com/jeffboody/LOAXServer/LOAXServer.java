@@ -27,6 +27,7 @@ import android.util.Log;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 import com.jeffboody.a3d.A3DSurfaceView;
@@ -42,6 +43,11 @@ public class LOAXServer extends Activity
 
 	private native void NativeKeyDown(int keycode, int meta);
 	private native void NativeKeyUp(int keycode, int meta);
+	private native void NativeTouch(int action, int count,
+	                                float x0, float y0,
+	                                float x1, float y1,
+	                                float x2, float y2,
+	                                float x3, float y3);
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -95,6 +101,69 @@ public class LOAXServer extends Activity
 	public boolean onKeyUp(int keycode, KeyEvent event)
 	{
 		NativeKeyUp(keycode, event.getMetaState());
+		return true;
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event)
+	{
+		try
+		{
+			int action = event.getAction();
+			int count  = event.getPointerCount();
+
+			if(count == 1)
+			{
+				NativeTouch(action, count,
+				            event.getX(), event.getY(),
+				            0.0f, 0.0f,
+				            0.0f, 0.0f,
+				            0.0f, 0.0f);
+			}
+			else if(count == 2)
+			{
+				NativeTouch(action, count,
+				            event.getX(event.findPointerIndex(0)),
+				            event.getY(event.findPointerIndex(0)),
+				            event.getX(event.findPointerIndex(1)),
+				            event.getY(event.findPointerIndex(1)),
+				            0.0f, 0.0f,
+				            0.0f, 0.0f);
+			}
+			else if(count == 3)
+			{
+				NativeTouch(action, count,
+				            event.getX(event.findPointerIndex(0)),
+				            event.getY(event.findPointerIndex(0)),
+				            event.getX(event.findPointerIndex(1)),
+				            event.getY(event.findPointerIndex(1)),
+				            event.getX(event.findPointerIndex(2)),
+				            event.getY(event.findPointerIndex(2)),
+				            0.0f, 0.0f);
+			}
+			else if(count >= 4)
+			{
+				NativeTouch(action, count,
+				            event.getX(event.findPointerIndex(0)),
+				            event.getY(event.findPointerIndex(0)),
+				            event.getX(event.findPointerIndex(1)),
+				            event.getY(event.findPointerIndex(1)),
+				            event.getX(event.findPointerIndex(2)),
+				            event.getY(event.findPointerIndex(2)),
+				            event.getX(event.findPointerIndex(3)),
+				            event.getY(event.findPointerIndex(3)));
+			}
+			else
+			{
+				return false;
+			}
+		}
+		catch(Exception e)
+		{
+			// fail silently
+			return false;
+		}
+
 		return true;
 	}
 

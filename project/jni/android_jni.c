@@ -203,3 +203,20 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyUp(JNIE
 		loax_server_keyup(loax_renderer->server, keycode, meta);
 	}
 }
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeTouch(JNIEnv* env, jobject  obj, jint action, jint count,
+                                                                            jfloat x0, jfloat y0,
+                                                                            jfloat x1, jfloat y1,
+                                                                            jfloat x2, jfloat y2,
+                                                                            jfloat x3, jfloat y3)
+{
+	assert(env);
+	LOGD("debug action=0x%X, count=%i", action, count);
+
+	if(loax_renderer)
+	{
+		// error handling is in loax_server_touch
+		float coord[8] = { x0, y0, x1, y1, x2, y2, x3, y3 };
+		loax_server_touch(loax_renderer->server, action, count, coord);
+	}
+}
