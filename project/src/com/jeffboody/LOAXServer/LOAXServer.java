@@ -93,14 +93,24 @@ public class LOAXServer extends Activity
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event)
 	{
-		NativeKeyDown(keycode, event.getMetaState());
+		int ascii = event.getUnicodeChar(0);
+		int meta  = event.getMetaState();
+		if((ascii > 0) && (ascii < 128))
+		{
+			NativeKeyDown(ascii, meta);
+		}
 		return true;
 	}
 
 	@Override
 	public boolean onKeyUp(int keycode, KeyEvent event)
 	{
-		NativeKeyUp(keycode, event.getMetaState());
+		int ascii = event.getUnicodeChar(0);
+		int meta  = event.getMetaState();
+		if((ascii > 0) && (ascii < 128))
+		{
+			NativeKeyUp(ascii, meta);
+		}
 		return true;
 	}
 
