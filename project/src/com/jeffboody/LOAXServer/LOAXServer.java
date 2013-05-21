@@ -43,6 +43,8 @@ public class LOAXServer extends Activity
 
 	private native void NativeKeyDown(int keycode, int meta);
 	private native void NativeKeyUp(int keycode, int meta);
+	private native void NativeButtonDown(int keycode);
+	private native void NativeButtonUp(int keycode);
 	private native void NativeTouch(int action, int count,
 	                                float x0, float y0,
 	                                float x1, float y1,
@@ -90,14 +92,35 @@ public class LOAXServer extends Activity
 		super.onDestroy();
 	}
 
+	private static boolean isGameKey(int keycode)
+	{
+		if((keycode == KeyEvent.KEYCODE_DPAD_CENTER) ||
+		   (keycode == KeyEvent.KEYCODE_DPAD_UP)     ||
+		   (keycode == KeyEvent.KEYCODE_DPAD_DOWN)   ||
+		   (keycode == KeyEvent.KEYCODE_DPAD_LEFT)   ||
+		   (keycode == KeyEvent.KEYCODE_DPAD_RIGHT))
+		{
+			return true;
+		}
+
+		return KeyEvent.isGamepadButton(keycode);
+	}
+
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event)
 	{
-		int ascii = event.getUnicodeChar(0);
-		int meta  = event.getMetaState();
-		if((ascii > 0) && (ascii < 128))
+		if(event.getRepeatCount() == 0)
 		{
-			NativeKeyDown(ascii, meta);
+			int ascii = event.getUnicodeChar(0);
+			int meta  = event.getMetaState();
+			if((ascii > 0) && (ascii < 128))
+			{
+				NativeKeyDown(ascii, meta);
+			}
+			else if(isGameKey(keycode))
+			{
+				NativeButtonDown(keycode);
+			}
 		}
 		return true;
 	}
@@ -110,6 +133,10 @@ public class LOAXServer extends Activity
 		if((ascii > 0) && (ascii < 128))
 		{
 			NativeKeyUp(ascii, meta);
+		}
+		else if(isGameKey(keycode))
+		{
+			NativeButtonUp(keycode);
 		}
 		return true;
 	}

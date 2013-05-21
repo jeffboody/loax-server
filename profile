@@ -1,5 +1,5 @@
 # To update project for new SDK
-# android update project -p project -t android-7
+# android update project -p project -t android-17
 
 # App
 export APP=LOAXServer
