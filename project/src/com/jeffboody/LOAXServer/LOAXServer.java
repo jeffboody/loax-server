@@ -43,8 +43,8 @@ public class LOAXServer extends Activity
 
 	private native void NativeKeyDown(int keycode, int meta);
 	private native void NativeKeyUp(int keycode, int meta);
-	private native void NativeButtonDown(int keycode);
-	private native void NativeButtonUp(int keycode);
+	private native void NativeButtonDown(int id, int keycode);
+	private native void NativeButtonUp(int id, int keycode);
 	private native void NativeTouch(int action, int count,
 	                                float x0, float y0,
 	                                float x1, float y1,
@@ -119,7 +119,7 @@ public class LOAXServer extends Activity
 			}
 			else if(isGameKey(keycode))
 			{
-				NativeButtonDown(keycode);
+				NativeButtonDown(event.getDeviceId(), keycode);
 			}
 		}
 		return true;
@@ -136,7 +136,7 @@ public class LOAXServer extends Activity
 		}
 		else if(isGameKey(keycode))
 		{
-			NativeButtonUp(keycode);
+			NativeButtonUp(event.getDeviceId(), keycode);
 		}
 		return true;
 	}

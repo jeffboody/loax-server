@@ -204,25 +204,25 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyUp(JNIE
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonDown(JNIEnv* env, jobject  obj, jint keycode)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonDown(JNIEnv* env, jobject  obj, jint id, jint keycode)
 {
 	assert(env);
-	LOGD("debug keycode=0x%X", keycode);
+	LOGD("debug id=%i, keycode=0x%X", id, keycode);
 
 	if(loax_renderer)
 	{
-		loax_server_buttondown(loax_renderer->server, keycode);
+		loax_server_buttondown(loax_renderer->server, id, keycode);
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonUp(JNIEnv* env, jobject  obj, jint keycode)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonUp(JNIEnv* env, jobject  obj, jint id, jint keycode)
 {
 	assert(env);
-	LOGD("debug keycode=0x%X", keycode);
+	LOGD("debug id=%i, keycode=0x%X", id, keycode);
 
 	if(loax_renderer)
 	{
-		loax_server_buttonup(loax_renderer->server, keycode);
+		loax_server_buttonup(loax_renderer->server, id, keycode);
 	}
 }
 
