@@ -226,6 +226,17 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonUp(J
 	}
 }
 
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeAxisMove(JNIEnv* env, jobject obj, jint id, jint axis, jfloat value)
+{
+	assert(env);
+	LOGD("debug id=%i, axis=0x%X, value=%f", id, axis, value);
+
+	if(loax_renderer)
+	{
+		loax_server_axismove(loax_renderer->server, id, axis, value);
+	}
+}
+
 JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeTouch(JNIEnv* env, jobject  obj, jint action, jint count,
                                                                             jfloat x0, jfloat y0,
                                                                             jfloat x1, jfloat y1,

@@ -28,6 +28,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.InputDevice;
 import android.view.Window;
 import android.view.WindowManager;
 import com.jeffboody.a3d.A3DSurfaceView;
@@ -41,10 +42,17 @@ public class LOAXServer extends Activity
 	private A3DNativeRenderer Renderer;
 	private A3DSurfaceView    Surface;
 
+	// axis values
+	private float AX1 = 0.0F;
+	private float AY1 = 0.0F;
+	private float AX2 = 0.0F;
+	private float AY2 = 0.0F;
+
 	private native void NativeKeyDown(int keycode, int meta);
 	private native void NativeKeyUp(int keycode, int meta);
 	private native void NativeButtonDown(int id, int keycode);
 	private native void NativeButtonUp(int id, int keycode);
+	private native void NativeAxisMove(int id, int axis, float value);
 	private native void NativeTouch(int action, int count,
 	                                float x0, float y0,
 	                                float x1, float y1,
@@ -139,6 +147,48 @@ public class LOAXServer extends Activity
 			NativeButtonUp(event.getDeviceId(), keycode);
 		}
 		return true;
+	}
+
+	@Override
+	public boolean onGenericMotionEvent(MotionEvent event)
+	{
+		int source = event.getSource();
+		int action = event.getAction();
+		int id     = event.getDeviceId();
+		if((source & InputDevice.SOURCE_CLASS_JOYSTICK) != 0)
+		{
+			if(action == MotionEvent.ACTION_MOVE)
+			{
+				// process the joystick movement...
+				float ax1 = event.getAxisValue(MotionEvent.AXIS_X);
+				float ay1 = event.getAxisValue(MotionEvent.AXIS_Y);
+				float ax2 = event.getAxisValue(MotionEvent.AXIS_Z);
+				float ay2 = event.getAxisValue(MotionEvent.AXIS_RZ);
+
+				if(ax1 != AX1)
+				{
+					NativeAxisMove(id, MotionEvent.AXIS_X, ax1);
+					AX1 = ax1;
+				}
+				if(ay1 != AY1)
+				{
+					NativeAxisMove(id, MotionEvent.AXIS_Y,  ay1);
+					AY1 = ay1;
+				}
+				if(ax2 != AX2)
+				{
+					NativeAxisMove(id, MotionEvent.AXIS_Z,  ax2);
+					AX2 = ax2;
+				}
+				if(ay2 != AY2)
+				{
+					NativeAxisMove(id, MotionEvent.AXIS_RZ, ay2);
+					AY2 = ay2;
+				}
+				return true;
+			}
+		}
+		return super.onGenericMotionEvent(event);
 	}
 
 	@Override
