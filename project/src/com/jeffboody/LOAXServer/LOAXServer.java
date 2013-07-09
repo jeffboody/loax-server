@@ -117,18 +117,15 @@ public class LOAXServer extends Activity
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event)
 	{
-		if(event.getRepeatCount() == 0)
+		int ascii = event.getUnicodeChar(0);
+		int meta  = event.getMetaState();
+		if((ascii > 0) && (ascii < 128))
 		{
-			int ascii = event.getUnicodeChar(0);
-			int meta  = event.getMetaState();
-			if((ascii > 0) && (ascii < 128))
-			{
-				NativeKeyDown(ascii, meta);
-			}
-			else if(isGameKey(keycode))
-			{
-				NativeButtonDown(event.getDeviceId(), keycode);
-			}
+			NativeKeyDown(ascii, meta);
+		}
+		else if(isGameKey(keycode))
+		{
+			NativeButtonDown(event.getDeviceId(), keycode);
 		}
 		return true;
 	}
