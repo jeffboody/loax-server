@@ -26,16 +26,23 @@ package com.jeffboody.LOAXServer;
 import android.util.Log;
 import android.app.Activity;
 import android.os.Bundle;
+import android.content.Context;
+import android.hardware.SensorManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.InputDevice;
 import android.view.Window;
 import android.view.WindowManager;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import com.jeffboody.a3d.A3DSurfaceView;
 import com.jeffboody.a3d.A3DNativeRenderer;
 import com.jeffboody.a3d.A3DResource;
 
-public class LOAXServer extends Activity
+public class LOAXServer extends Activity implements SensorEventListener
 {
 	private static final String TAG = "LOAXServer";
 
@@ -48,6 +55,18 @@ public class LOAXServer extends Activity
 	private float AX2 = 0.0F;
 	private float AY2 = 0.0F;
 
+	// sensors
+	private Sensor  mAccelerometer;
+	private Sensor  mMagnetic;
+	private float[] mAccelerometerValues = new float[3];
+	private float[] mMagneticValues      = new float[3];
+	private boolean mAccelerometerReady  = false;
+	private boolean mMagneticReady       = false;
+
+	/*
+	 * Native interface
+	 */
+
 	private native void NativeKeyDown(int keycode, int meta);
 	private native void NativeKeyUp(int keycode, int meta);
 	private native void NativeButtonDown(int id, int keycode);
@@ -58,11 +77,45 @@ public class LOAXServer extends Activity
 	                                float x1, float y1,
 	                                float x2, float y2,
 	                                float x3, float y3);
+	private native void NativeOrientation(float ax, float ay, float az,
+	                                      float mx, float my, float mz,
+	                                      int   rotation);
+
+	// "singleton" used for callbacks
+	private static LOAXServer mSelf = null;
+
+	// lock callback functions since they happen on rendering thread
+	private Lock mNativeLock = new ReentrantLock();
+
+	private static final int LOAX_CMD_ORIENTATION_ENABLE  = 0x00010000;
+	private static final int LOAX_CMD_ORIENTATION_DISABLE = 0x00010001;
+
+	private static int CallbackCmd(int cmd)
+	{
+		if(mSelf == null)
+		{
+			// ignore
+		}
+		else if(cmd == LOAX_CMD_ORIENTATION_ENABLE)
+		{
+			return mSelf.sensorOrientationEnable();
+		}
+		else if(cmd == LOAX_CMD_ORIENTATION_DISABLE)
+		{
+			return mSelf.sensorOrientationDisable();
+		}
+		return 0;
+	}
+
+	/*
+	 * Activity interface
+	 */
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		mSelf = this;
 
 		A3DResource r = new A3DResource(this, R.raw.timestamp);
 		r.Add(R.raw.whitrabt, "whitrabt.tex.gz");
@@ -87,6 +140,7 @@ public class LOAXServer extends Activity
 	@Override
 	protected void onPause()
 	{
+		sensorOrientationDisable();
 		Surface.PauseRenderer();
 		super.onPause();
 	}
@@ -97,6 +151,7 @@ public class LOAXServer extends Activity
 		Surface.StopRenderer();
 		Surface = null;
 		Renderer = null;
+		mSelf = null;
 		super.onDestroy();
 	}
 
@@ -249,6 +304,122 @@ public class LOAXServer extends Activity
 		}
 
 		return true;
+	}
+
+	/*
+	 * SensorEventListener interface
+	 */
+
+	private int sensorOrientationEnable()
+	{
+
+		mNativeLock.lock();
+		try
+		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+			if(mMagnetic == null)
+			{
+				mMagnetic = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+				if(mMagnetic != null)
+				{
+					sm.registerListener(this,
+					                    mMagnetic,
+					                    SensorManager.SENSOR_DELAY_GAME);
+				}
+			}
+
+			if(mAccelerometer == null)
+			{
+				mAccelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+				if(mAccelerometer != null)
+				{
+					sm.registerListener(this,
+					                    mAccelerometer,
+					                    SensorManager.SENSOR_DELAY_GAME);
+				}
+			}
+
+			if((mMagnetic == null) || (mAccelerometer == null))
+			{
+				sensorOrientationDisable();
+				return 0;
+			}
+
+			return 1;
+		}
+		finally
+		{
+			mNativeLock.unlock();
+		}
+	}
+
+	private int sensorOrientationDisable()
+	{
+		mNativeLock.lock();
+		try
+		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+			if(mAccelerometer != null)
+			{
+				sm.unregisterListener(this, mAccelerometer);
+				mAccelerometer = null;
+			}
+			if(mMagnetic != null)
+			{
+				sm.unregisterListener(this, mMagnetic);
+				mMagnetic = null;
+			}
+
+			mAccelerometerReady = false;
+			mMagneticReady      = false;
+
+			return 1;
+		}
+		finally
+		{
+			mNativeLock.unlock();
+		}
+	}
+
+	public void onSensorChanged(SensorEvent event)
+	{
+		boolean update_orientation = false;
+
+		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+		{
+			mAccelerometerValues[0] = event.values[0];
+			mAccelerometerValues[1] = event.values[1];
+			mAccelerometerValues[2] = event.values[2];
+			mAccelerometerReady     = true;
+			update_orientation      = true;
+		}
+		else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+		{
+			mMagneticValues[0] = event.values[0];
+			mMagneticValues[1] = event.values[1];
+			mMagneticValues[2] = event.values[2];
+			mMagneticReady     = true;
+			update_orientation = true;
+		}
+
+		if(update_orientation && mAccelerometerReady && mMagneticReady)
+		{
+			int   rotation = 90*getWindowManager().getDefaultDisplay().getRotation();
+			float ax       = mAccelerometerValues[0];
+			float ay       = mAccelerometerValues[1];
+			float az       = mAccelerometerValues[2];
+			float mx       = mMagneticValues[0];
+			float my       = mMagneticValues[1];
+			float mz       = mMagneticValues[2];
+			NativeOrientation(ax, ay, az,
+			                  mx, my, mz,
+			                  rotation);
+		}
+	}
+
+	public void onAccuracyChanged(Sensor sensor, int accuracy)
+	{
 	}
 
 	static

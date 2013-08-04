@@ -32,6 +32,46 @@
 #include "a3d/a3d_log.h"
 
 /***********************************************************
+* JNI callback(s)                                          *
+***********************************************************/
+
+static JavaVM* g_vm = NULL;
+
+static int cmd_fn(int cmd)
+{
+	LOGD("debug cmd=%i", cmd);
+
+	if(g_vm == NULL)
+	{
+		LOGE("g_vm is NULL");
+		return 0;
+	}
+
+	JNIEnv* env = NULL;
+	if((*g_vm)->AttachCurrentThread(g_vm, &env, NULL) != 0)
+	{
+		LOGE("AttachCurrentThread failed");
+		return 0;
+	}
+
+	jclass cls = (*env)->FindClass(env, "com/jeffboody/LOAXServer/LOAXServer");
+	if(cls == NULL)
+	{
+		LOGE("FindClass failed");
+		return 0;
+	}
+
+	jmethodID mid = (*env)->GetStaticMethodID(env, cls, "CallbackCmd", "(I)I");
+	if(mid == NULL)
+	{
+		LOGE("GetStaticMethodID failed");
+		return 0;
+	}
+
+	return (*env)->CallIntMethod(env, cls, mid, cmd);
+}
+
+/***********************************************************
 * private                                                  *
 ***********************************************************/
 
@@ -59,7 +99,7 @@ loax_renderer_t* loax_renderer_new(const char* font)
 		goto fail_font;
 	}
 
-	self->server = loax_server_new();
+	self->server = loax_server_new(cmd_fn);
 	if(self->server == NULL)
 	{
 		goto fail_server;
@@ -126,17 +166,33 @@ JNIEXPORT void JNICALL Java_com_jeffboody_a3d_A3DNativeRenderer_NativeCreate(JNI
 		return;
 	}
 
+	if((*env)->GetJavaVM(env, &g_vm) != 0)
+	{
+		LOGE("GetJavaVM failed");
+		return;
+	}
+
 	if(a3d_GL_load() == 0)
 	{
 		LOGE("a3d_GL_load failed");
-		return;
+		goto fail_load;
 	}
 
 	loax_renderer = loax_renderer_new("/data/data/com.jeffboody.LOAXServer/files/whitrabt.tex.gz");
 	if(loax_renderer == NULL)
 	{
-		a3d_GL_unload();
+		goto fail_renderer;
 	}
+
+	// success
+	return;
+
+	// failure
+	fail_load:
+		g_vm = NULL;
+	fail_renderer:
+		a3d_GL_unload();
+	return;
 }
 
 JNIEXPORT void JNICALL Java_com_jeffboody_a3d_A3DNativeRenderer_NativeDestroy(JNIEnv* env)
@@ -148,6 +204,7 @@ JNIEXPORT void JNICALL Java_com_jeffboody_a3d_A3DNativeRenderer_NativeDestroy(JN
 	{
 		loax_renderer_delete(&loax_renderer);
 		a3d_GL_unload();
+		g_vm = NULL;
 	}
 }
 
@@ -251,5 +308,21 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeTouch(JNIE
 		// error handling is in loax_server_touch
 		float coord[8] = { x0, y0, x1, y1, x2, y2, x3, y3 };
 		loax_server_touch(loax_renderer->server, action, count, coord);
+	}
+}
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeOrientation(JNIEnv* env, jobject  obj,
+                                                                                  jfloat ax, jfloat ay, jfloat az,
+                                                                                  jfloat mx, jfloat my, jfloat mz,
+                                                                                  jint rotation)
+{
+	assert(env);
+	LOGD("debug ax=%f, ay=%f, az=%f", ax, ay, az);
+	LOGD("debug mx=%f, my=%f, mz=%f", mx, my, mz);
+	LOGD("debug rotation=%i", rotation);
+
+	if(loax_renderer)
+	{
+		loax_server_orientation(loax_renderer->server, ax, ay, az, mx, my, mz, rotation);
 	}
 }
