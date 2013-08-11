@@ -34,18 +34,19 @@ import android.hardware.SensorEventListener;
 import android.location.LocationManager;
 import android.location.Location;
 import android.location.LocationListener;
+import android.os.Message;
+import android.os.Handler;
+import android.os.Handler.Callback;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.InputDevice;
 import android.view.Window;
 import android.view.WindowManager;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import com.jeffboody.a3d.A3DSurfaceView;
 import com.jeffboody.a3d.A3DNativeRenderer;
 import com.jeffboody.a3d.A3DResource;
 
-public class LOAXServer extends Activity implements SensorEventListener, LocationListener
+public class LOAXServer extends Activity implements SensorEventListener, LocationListener, Handler.Callback
 {
 	private static final String TAG = "LOAXServer";
 
@@ -65,6 +66,10 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private float[] mMagneticValues      = new float[3];
 	private boolean mAccelerometerReady  = false;
 	private boolean mMagneticReady       = false;
+
+	// "singleton" used for callbacks
+	// handler is used to trigger events on UI thread
+	private static Handler mHandler = null;
 
 	/*
 	 * Native interface
@@ -87,40 +92,21 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	                              float accuracy, float altitude,
 	                              float speed, float bearing);
 
-	// "singleton" used for callbacks
-	private static LOAXServer mSelf = null;
-
-	// lock callback functions since they happen on rendering thread
-	private Lock mNativeLock = new ReentrantLock();
-
 	private static final int LOAX_CMD_ORIENTATION_ENABLE  = 0x00010000;
 	private static final int LOAX_CMD_ORIENTATION_DISABLE = 0x00010001;
 	private static final int LOAX_CMD_GPS_ENABLE          = 0x00010002;
 	private static final int LOAX_CMD_GPS_DISABLE         = 0x00010003;
 
-	private static int CallbackCmd(int cmd)
+	private static void CallbackCmd(int cmd)
 	{
-		if(mSelf == null)
+		try
+		{
+			mHandler.sendMessage(Message.obtain(mHandler, cmd));
+		}
+		catch(Exception e)
 		{
 			// ignore
 		}
-		else if(cmd == LOAX_CMD_ORIENTATION_ENABLE)
-		{
-			return mSelf.sensorOrientationEnable();
-		}
-		else if(cmd == LOAX_CMD_ORIENTATION_DISABLE)
-		{
-			return mSelf.sensorOrientationDisable();
-		}
-		else if(cmd == LOAX_CMD_GPS_ENABLE)
-		{
-			return mSelf.sensorGpsEnable();
-		}
-		else if(cmd == LOAX_CMD_GPS_DISABLE)
-		{
-			return mSelf.sensorGpsDisable();
-		}
-		return 0;
 	}
 
 	/*
@@ -131,7 +117,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		mSelf = this;
+		mHandler = new Handler(this);
 
 		A3DResource r = new A3DResource(this, R.raw.timestamp);
 		r.Add(R.raw.whitrabt, "whitrabt.tex.gz");
@@ -166,9 +152,9 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	protected void onDestroy()
 	{
 		Surface.StopRenderer();
-		Surface = null;
+		Surface  = null;
 		Renderer = null;
-		mSelf = null;
+		mHandler = null;
 		super.onDestroy();
 	}
 
@@ -327,76 +313,54 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	 * SensorEventListener interface
 	 */
 
-	private int sensorOrientationEnable()
+	private void sensorOrientationEnable()
 	{
+		SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-		mNativeLock.lock();
-		try
+		if(mMagnetic == null)
 		{
-			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-			if(mMagnetic == null)
+			mMagnetic = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+			if(mMagnetic != null)
 			{
-				mMagnetic = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-				if(mMagnetic != null)
-				{
-					sm.registerListener(this,
-					                    mMagnetic,
-					                    SensorManager.SENSOR_DELAY_GAME);
-				}
+				sm.registerListener(this,
+				                    mMagnetic,
+				                    SensorManager.SENSOR_DELAY_GAME);
 			}
-
-			if(mAccelerometer == null)
-			{
-				mAccelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-				if(mAccelerometer != null)
-				{
-					sm.registerListener(this,
-					                    mAccelerometer,
-					                    SensorManager.SENSOR_DELAY_GAME);
-				}
-			}
-
-			if((mMagnetic == null) || (mAccelerometer == null))
-			{
-				sensorOrientationDisable();
-				return 0;
-			}
-
-			return 1;
 		}
-		finally
+
+		if(mAccelerometer == null)
 		{
-			mNativeLock.unlock();
+			mAccelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+			if(mAccelerometer != null)
+			{
+				sm.registerListener(this,
+				                    mAccelerometer,
+				                    SensorManager.SENSOR_DELAY_GAME);
+			}
+		}
+
+		if((mMagnetic == null) || (mAccelerometer == null))
+		{
+			sensorOrientationDisable();
 		}
 	}
 
-	private int sensorOrientationDisable()
+	private void sensorOrientationDisable()
 	{
-		mNativeLock.lock();
-		try
+		SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+		if(mAccelerometer != null)
 		{
-			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-			if(mAccelerometer != null)
-			{
-				sm.unregisterListener(this, mAccelerometer);
-				mAccelerometer = null;
-			}
-			if(mMagnetic != null)
-			{
-				sm.unregisterListener(this, mMagnetic);
-				mMagnetic = null;
-			}
-
-			mAccelerometerReady = false;
-			mMagneticReady      = false;
-
-			return 1;
+			sm.unregisterListener(this, mAccelerometer);
+			mAccelerometer = null;
 		}
-		finally
+		if(mMagnetic != null)
 		{
-			mNativeLock.unlock();
+			sm.unregisterListener(this, mMagnetic);
+			mMagnetic = null;
 		}
+
+		mAccelerometerReady = false;
+		mMagneticReady      = false;
 	}
 
 	public void onSensorChanged(SensorEvent event)
@@ -443,55 +407,37 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	 * LocationListener interface
 	 */
 
-	private int sensorGpsEnable()
+	private void sensorGpsEnable()
 	{
+		LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-		mNativeLock.lock();
+		// listen for gps
 		try
 		{
-			LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-			// listen for gps
-			try
+			if(lm.isProviderEnabled("gps") == false)
 			{
-				if(lm.isProviderEnabled("gps"))
-				{
-					lm.requestLocationUpdates("gps", 0L, 0.0F, this);
-				}
-				else
-				{
-					return 0;
-				}
-			}
-			catch(Exception e)
-			{
-				Log.e(TAG, "exception: " + e);
-				return 0;
+				return;
 			}
 
-			// TODO - initialize location
-			//onLocationChanged(lm.getLastKnownLocation("gps"));
-
-			return 1;
+			lm.requestLocationUpdates("gps", 0L, 0.0F, this);
+			onLocationChanged(lm.getLastKnownLocation("gps"));
 		}
-		finally
+		catch(Exception e)
 		{
-			mNativeLock.unlock();
+			Log.e(TAG, "exception: " + e);
 		}
 	}
 
-	private int sensorGpsDisable()
+	private void sensorGpsDisable()
 	{
-		mNativeLock.lock();
 		try
 		{
 			LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 			lm.removeUpdates(this);
-			return 1;
 		}
-		finally
+		catch(Exception e)
 		{
-			mNativeLock.unlock();
+			// ignore
 		}
 	}
 
@@ -517,6 +463,32 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 
 	public void onStatusChanged(String provider, int status, Bundle extras)
 	{
+	}
+
+	/*
+	 * Handler.Callback interface
+	 */
+
+	public boolean handleMessage(Message msg)
+	{
+		int cmd = msg.what;
+		if(cmd == LOAX_CMD_ORIENTATION_ENABLE)
+		{
+			sensorOrientationEnable();
+		}
+		else if(cmd == LOAX_CMD_ORIENTATION_DISABLE)
+		{
+			sensorOrientationDisable();
+		}
+		else if(cmd == LOAX_CMD_GPS_ENABLE)
+		{
+			sensorGpsEnable();
+		}
+		else if(cmd == LOAX_CMD_GPS_DISABLE)
+		{
+			sensorGpsDisable();
+		}
+		return true;
 	}
 
 	static

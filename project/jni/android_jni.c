@@ -37,38 +37,38 @@
 
 static JavaVM* g_vm = NULL;
 
-static int cmd_fn(int cmd)
+static void cmd_fn(int cmd)
 {
 	LOGD("debug cmd=%i", cmd);
 
 	if(g_vm == NULL)
 	{
 		LOGE("g_vm is NULL");
-		return 0;
+		return;
 	}
 
 	JNIEnv* env = NULL;
 	if((*g_vm)->AttachCurrentThread(g_vm, &env, NULL) != 0)
 	{
 		LOGE("AttachCurrentThread failed");
-		return 0;
+		return;
 	}
 
 	jclass cls = (*env)->FindClass(env, "com/jeffboody/LOAXServer/LOAXServer");
 	if(cls == NULL)
 	{
 		LOGE("FindClass failed");
-		return 0;
+		return;
 	}
 
-	jmethodID mid = (*env)->GetStaticMethodID(env, cls, "CallbackCmd", "(I)I");
+	jmethodID mid = (*env)->GetStaticMethodID(env, cls, "CallbackCmd", "(I)V");
 	if(mid == NULL)
 	{
 		LOGE("GetStaticMethodID failed");
-		return 0;
+		return;
 	}
 
-	return (*env)->CallIntMethod(env, cls, mid, cmd);
+	(*env)->CallVoidMethod(env, cls, mid, cmd);
 }
 
 /***********************************************************
