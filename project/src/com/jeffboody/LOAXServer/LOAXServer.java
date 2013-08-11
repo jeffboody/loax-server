@@ -31,6 +31,9 @@ import android.hardware.SensorManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
+import android.location.LocationManager;
+import android.location.Location;
+import android.location.LocationListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.InputDevice;
@@ -42,7 +45,7 @@ import com.jeffboody.a3d.A3DSurfaceView;
 import com.jeffboody.a3d.A3DNativeRenderer;
 import com.jeffboody.a3d.A3DResource;
 
-public class LOAXServer extends Activity implements SensorEventListener
+public class LOAXServer extends Activity implements SensorEventListener, LocationListener
 {
 	private static final String TAG = "LOAXServer";
 
@@ -80,6 +83,9 @@ public class LOAXServer extends Activity implements SensorEventListener
 	private native void NativeOrientation(float ax, float ay, float az,
 	                                      float mx, float my, float mz,
 	                                      int   rotation);
+	private native void NativeGps(double lat, double lon,
+	                              float accuracy, float altitude,
+	                              float speed, float bearing);
 
 	// "singleton" used for callbacks
 	private static LOAXServer mSelf = null;
@@ -89,6 +95,8 @@ public class LOAXServer extends Activity implements SensorEventListener
 
 	private static final int LOAX_CMD_ORIENTATION_ENABLE  = 0x00010000;
 	private static final int LOAX_CMD_ORIENTATION_DISABLE = 0x00010001;
+	private static final int LOAX_CMD_GPS_ENABLE          = 0x00010002;
+	private static final int LOAX_CMD_GPS_DISABLE         = 0x00010003;
 
 	private static int CallbackCmd(int cmd)
 	{
@@ -103,6 +111,14 @@ public class LOAXServer extends Activity implements SensorEventListener
 		else if(cmd == LOAX_CMD_ORIENTATION_DISABLE)
 		{
 			return mSelf.sensorOrientationDisable();
+		}
+		else if(cmd == LOAX_CMD_GPS_ENABLE)
+		{
+			return mSelf.sensorGpsEnable();
+		}
+		else if(cmd == LOAX_CMD_GPS_DISABLE)
+		{
+			return mSelf.sensorGpsDisable();
 		}
 		return 0;
 	}
@@ -140,8 +156,9 @@ public class LOAXServer extends Activity implements SensorEventListener
 	@Override
 	protected void onPause()
 	{
-		sensorOrientationDisable();
 		Surface.PauseRenderer();
+		sensorOrientationDisable();
+		sensorGpsDisable();
 		super.onPause();
 	}
 
@@ -419,6 +436,86 @@ public class LOAXServer extends Activity implements SensorEventListener
 	}
 
 	public void onAccuracyChanged(Sensor sensor, int accuracy)
+	{
+	}
+
+	/*
+	 * LocationListener interface
+	 */
+
+	private int sensorGpsEnable()
+	{
+
+		mNativeLock.lock();
+		try
+		{
+			LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+			// listen for gps
+			try
+			{
+				if(lm.isProviderEnabled("gps"))
+				{
+					lm.requestLocationUpdates("gps", 0L, 0.0F, this);
+				}
+				else
+				{
+					return 0;
+				}
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "exception: " + e);
+				return 0;
+			}
+
+			// TODO - initialize location
+			//onLocationChanged(lm.getLastKnownLocation("gps"));
+
+			return 1;
+		}
+		finally
+		{
+			mNativeLock.unlock();
+		}
+	}
+
+	private int sensorGpsDisable()
+	{
+		mNativeLock.lock();
+		try
+		{
+			LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+			lm.removeUpdates(this);
+			return 1;
+		}
+		finally
+		{
+			mNativeLock.unlock();
+		}
+	}
+
+	public void onLocationChanged(Location location)
+	{
+		double lat     = location.getLatitude();
+		double lon     = location.getLongitude();
+		float accuracy = location.getAccuracy();
+		float altitude = (float) location.getAltitude();
+		float speed    = location.getSpeed();
+		float bearing  = location.getBearing();
+
+		NativeGps(lat, lon, accuracy, altitude, speed, bearing);
+	}
+
+	public void onProviderDisabled(String provider)
+	{
+	}
+
+	public void onProviderEnabled(String provider)
+	{
+	}
+
+	public void onStatusChanged(String provider, int status, Bundle extras)
 	{
 	}
 

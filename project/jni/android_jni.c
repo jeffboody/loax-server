@@ -326,3 +326,19 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeOrientatio
 		loax_server_orientation(loax_renderer->server, ax, ay, az, mx, my, mz, rotation);
 	}
 }
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeGps(JNIEnv* env, jobject  obj,
+                                                                         jdouble lat, jdouble lon,
+                                                                         jfloat accuracy, jfloat altitude,
+                                                                         jfloat speed, jfloat bearing)
+{
+	assert(env);
+	LOGD("debug lat=%lf, lon=%lf", lat, lon);
+	LOGD("debug accuracy=%f, altitude=%f, speed=%f, bearing=%f",
+	     accuracy, altitude, speed, bearing);
+
+	if(loax_renderer)
+	{
+		loax_server_gps(loax_renderer->server, lat, lon, accuracy, altitude, speed, bearing);
+	}
+}
