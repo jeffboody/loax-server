@@ -62,10 +62,6 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	// sensors
 	private Sensor  mAccelerometer;
 	private Sensor  mMagnetic;
-	private float[] mAccelerometerValues = new float[3];
-	private float[] mMagneticValues      = new float[3];
-	private boolean mAccelerometerReady  = false;
-	private boolean mMagneticReady       = false;
 
 	// "singleton" used for callbacks
 	// handler is used to trigger events on UI thread
@@ -85,17 +81,19 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	                                float x1, float y1,
 	                                float x2, float y2,
 	                                float x3, float y3);
-	private native void NativeOrientation(float ax, float ay, float az,
-	                                      float mx, float my, float mz,
-	                                      int   rotation);
+	private native void NativeAccelerometer(float ax, float ay, float az,
+	                                        int   rotation);
+	private native void NativeMagnetometer(float mx, float my, float mz);
 	private native void NativeGps(double lat, double lon,
 	                              float accuracy, float altitude,
 	                              float speed, float bearing);
 
-	private static final int LOAX_CMD_ORIENTATION_ENABLE  = 0x00010000;
-	private static final int LOAX_CMD_ORIENTATION_DISABLE = 0x00010001;
-	private static final int LOAX_CMD_GPS_ENABLE          = 0x00010002;
-	private static final int LOAX_CMD_GPS_DISABLE         = 0x00010003;
+	private static final int LOAX_CMD_ACCELEROMETER_ENABLE  = 0x00010000;
+	private static final int LOAX_CMD_ACCELEROMETER_DISABLE = 0x00010001;
+	private static final int LOAX_CMD_MAGNETOMETER_ENABLE   = 0x00010002;
+	private static final int LOAX_CMD_MAGNETOMETER_DISABLE  = 0x00010003;
+	private static final int LOAX_CMD_GPS_ENABLE            = 0x00010004;
+	private static final int LOAX_CMD_GPS_DISABLE           = 0x00010005;
 
 	private static void CallbackCmd(int cmd)
 	{
@@ -143,7 +141,8 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	protected void onPause()
 	{
 		Surface.PauseRenderer();
-		sensorOrientationDisable();
+		sensorAccelerometerDisable();
+		sensorMagnetometerDisable();
 		sensorGpsDisable();
 		super.onPause();
 	}
@@ -313,23 +312,11 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	 * SensorEventListener interface
 	 */
 
-	private void sensorOrientationEnable()
+	private void sensorAccelerometerEnable()
 	{
-		SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-		if(mMagnetic == null)
-		{
-			mMagnetic = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-			if(mMagnetic != null)
-			{
-				sm.registerListener(this,
-				                    mMagnetic,
-				                    SensorManager.SENSOR_DELAY_GAME);
-			}
-		}
-
 		if(mAccelerometer == null)
 		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 			mAccelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 			if(mAccelerometer != null)
 			{
@@ -338,29 +325,41 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 				                    SensorManager.SENSOR_DELAY_GAME);
 			}
 		}
+	}
 
-		if((mMagnetic == null) || (mAccelerometer == null))
+	private void sensorMagnetometerEnable()
+	{
+		if(mMagnetic == null)
 		{
-			sensorOrientationDisable();
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+			mMagnetic = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+			if(mMagnetic != null)
+			{
+				sm.registerListener(this,
+				                    mMagnetic,
+				                    SensorManager.SENSOR_DELAY_GAME);
+			}
 		}
 	}
 
-	private void sensorOrientationDisable()
+	private void sensorAccelerometerDisable()
 	{
-		SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		if(mAccelerometer != null)
 		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 			sm.unregisterListener(this, mAccelerometer);
 			mAccelerometer = null;
 		}
+	}
+
+	private void sensorMagnetometerDisable()
+	{
 		if(mMagnetic != null)
 		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 			sm.unregisterListener(this, mMagnetic);
 			mMagnetic = null;
 		}
-
-		mAccelerometerReady = false;
-		mMagneticReady      = false;
 	}
 
 	public void onSensorChanged(SensorEvent event)
@@ -369,33 +368,18 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 
 		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
 		{
-			mAccelerometerValues[0] = event.values[0];
-			mAccelerometerValues[1] = event.values[1];
-			mAccelerometerValues[2] = event.values[2];
-			mAccelerometerReady     = true;
-			update_orientation      = true;
+			int   r  = 90*getWindowManager().getDefaultDisplay().getRotation();
+			float ax = event.values[0];
+			float ay = event.values[1];
+			float az = event.values[2];
+			NativeAccelerometer(ax, ay, az, r);
 		}
 		else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
 		{
-			mMagneticValues[0] = event.values[0];
-			mMagneticValues[1] = event.values[1];
-			mMagneticValues[2] = event.values[2];
-			mMagneticReady     = true;
-			update_orientation = true;
-		}
-
-		if(update_orientation && mAccelerometerReady && mMagneticReady)
-		{
-			int   rotation = 90*getWindowManager().getDefaultDisplay().getRotation();
-			float ax       = mAccelerometerValues[0];
-			float ay       = mAccelerometerValues[1];
-			float az       = mAccelerometerValues[2];
-			float mx       = mMagneticValues[0];
-			float my       = mMagneticValues[1];
-			float mz       = mMagneticValues[2];
-			NativeOrientation(ax, ay, az,
-			                  mx, my, mz,
-			                  rotation);
+			float mx = event.values[0];
+			float my = event.values[1];
+			float mz = event.values[2];
+			NativeMagnetometer(mx, my, mz);
 		}
 	}
 
@@ -472,13 +456,21 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	public boolean handleMessage(Message msg)
 	{
 		int cmd = msg.what;
-		if(cmd == LOAX_CMD_ORIENTATION_ENABLE)
+		if(cmd == LOAX_CMD_ACCELEROMETER_ENABLE)
 		{
-			sensorOrientationEnable();
+			sensorAccelerometerEnable();
 		}
-		else if(cmd == LOAX_CMD_ORIENTATION_DISABLE)
+		else if(cmd == LOAX_CMD_ACCELEROMETER_DISABLE)
 		{
-			sensorOrientationDisable();
+			sensorAccelerometerDisable();
+		}
+		else if(cmd == LOAX_CMD_MAGNETOMETER_ENABLE)
+		{
+			sensorMagnetometerEnable();
+		}
+		else if(cmd == LOAX_CMD_MAGNETOMETER_DISABLE)
+		{
+			sensorMagnetometerDisable();
 		}
 		else if(cmd == LOAX_CMD_GPS_ENABLE)
 		{

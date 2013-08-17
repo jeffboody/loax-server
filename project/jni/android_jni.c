@@ -311,19 +311,29 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeTouch(JNIE
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeOrientation(JNIEnv* env, jobject  obj,
-                                                                                  jfloat ax, jfloat ay, jfloat az,
-                                                                                  jfloat mx, jfloat my, jfloat mz,
-                                                                                  jint rotation)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeAccelerometer(JNIEnv* env, jobject  obj,
+                                                                                    jfloat ax, jfloat ay, jfloat az,
+                                                                                    jint rotation)
 {
 	assert(env);
 	LOGD("debug ax=%f, ay=%f, az=%f", ax, ay, az);
-	LOGD("debug mx=%f, my=%f, mz=%f", mx, my, mz);
 	LOGD("debug rotation=%i", rotation);
 
 	if(loax_renderer)
 	{
-		loax_server_orientation(loax_renderer->server, ax, ay, az, mx, my, mz, rotation);
+		loax_server_accelerometer(loax_renderer->server, ax, ay, az, rotation);
+	}
+}
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeMagnetometer(JNIEnv* env, jobject  obj,
+                                                                                   jfloat mx, jfloat my, jfloat mz)
+{
+	assert(env);
+	LOGD("debug mx=%f, my=%f, mz=%f", mx, my, mz);
+
+	if(loax_renderer)
+	{
+		loax_server_magnetometer(loax_renderer->server, mx, my, mz);
 	}
 }
 
