@@ -62,6 +62,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	// sensors
 	private Sensor  mAccelerometer;
 	private Sensor  mMagnetic;
+	private Sensor  mGyroscope;
 
 	// "singleton" used for callbacks
 	// handler is used to trigger events on UI thread
@@ -83,6 +84,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	                                float x3, float y3);
 	private native void NativeAccelerometer(float ax, float ay, float az,
 	                                        int   rotation);
+	private native void NativeGyroscope(float ax, float ay, float az);
 	private native void NativeMagnetometer(float mx, float my, float mz);
 	private native void NativeGps(double lat, double lon,
 	                              float accuracy, float altitude,
@@ -94,6 +96,8 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private static final int LOAX_CMD_MAGNETOMETER_DISABLE  = 0x00010003;
 	private static final int LOAX_CMD_GPS_ENABLE            = 0x00010004;
 	private static final int LOAX_CMD_GPS_DISABLE           = 0x00010005;
+	private static final int LOAX_CMD_GYROSCOPE_ENABLE      = 0x00010006;
+	private static final int LOAX_CMD_GYROSCOPE_DISABLE     = 0x00010007;
 
 	private static void CallbackCmd(int cmd)
 	{
@@ -144,6 +148,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		sensorAccelerometerDisable();
 		sensorMagnetometerDisable();
 		sensorGpsDisable();
+		sensorGyroscopeDisable();
 		super.onPause();
 	}
 
@@ -342,6 +347,21 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
+	private void sensorGyroscopeEnable()
+	{
+		if(mGyroscope == null)
+		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+			mGyroscope = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+			if(mGyroscope != null)
+			{
+				sm.registerListener(this,
+				                    mGyroscope,
+				                    SensorManager.SENSOR_DELAY_GAME);
+			}
+		}
+	}
+
 	private void sensorAccelerometerDisable()
 	{
 		if(mAccelerometer != null)
@@ -359,6 +379,16 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 			sm.unregisterListener(this, mMagnetic);
 			mMagnetic = null;
+		}
+	}
+
+	private void sensorGyroscopeDisable()
+	{
+		if(mGyroscope != null)
+		{
+			SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+			sm.unregisterListener(this, mGyroscope);
+			mGyroscope = null;
 		}
 	}
 
@@ -380,6 +410,13 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 			float my = event.values[1];
 			float mz = event.values[2];
 			NativeMagnetometer(mx, my, mz);
+		}
+		else if(event.sensor.getType() == Sensor.TYPE_GYROSCOPE)
+		{
+			float ax = event.values[0];
+			float ay = event.values[1];
+			float az = event.values[2];
+			NativeGyroscope(ax, ay, az);
 		}
 	}
 
@@ -479,6 +516,14 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		else if(cmd == LOAX_CMD_GPS_DISABLE)
 		{
 			sensorGpsDisable();
+		}
+		else if(cmd == LOAX_CMD_GYROSCOPE_ENABLE)
+		{
+			sensorGyroscopeEnable();
+		}
+		else if(cmd == LOAX_CMD_GYROSCOPE_DISABLE)
+		{
+			sensorGyroscopeDisable();
 		}
 		return true;
 	}

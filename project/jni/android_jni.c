@@ -352,3 +352,15 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeGps(JNIEnv
 		loax_server_gps(loax_renderer->server, lat, lon, accuracy, altitude, speed, bearing);
 	}
 }
+
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeGyroscope(JNIEnv* env, jobject  obj,
+                                                                                jfloat ax, jfloat ay, jfloat az)
+{
+	assert(env);
+	LOGD("debug ax=%f, ay=%f, az=%f", ax, ay, az);
+
+	if(loax_renderer)
+	{
+		loax_server_gyroscope(loax_renderer->server, ax, ay, az);
+	}
+}
