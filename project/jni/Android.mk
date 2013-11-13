@@ -11,7 +11,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := LOAXServer
 LOCAL_CFLAGS    := -Wall -D$(A3D_CLIENT_VERSION)
 LOCAL_SRC_FILES := android_jni.c
-LOCAL_LDLIBS    := -Llibs/armeabi \
-                   -llog -lnet -lloax -la3d
+LOCAL_LDLIBS    := -Llibs/armeabi -llog
+LOCAL_SHARED_LIBRARIES := libnet libloax liba3d
 
 include $(BUILD_SHARED_LIBRARY)
