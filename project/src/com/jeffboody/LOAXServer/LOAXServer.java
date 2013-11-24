@@ -98,6 +98,8 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private static final int LOAX_CMD_GPS_DISABLE           = 0x00010005;
 	private static final int LOAX_CMD_GYROSCOPE_ENABLE      = 0x00010006;
 	private static final int LOAX_CMD_GYROSCOPE_DISABLE     = 0x00010007;
+	private static final int LOAX_CMD_KEEPSCREENON_ENABLE   = 0x00010008;
+	private static final int LOAX_CMD_KEEPSCREENON_DISABLE  = 0x00010009;
 
 	private static void CallbackCmd(int cmd)
 	{
@@ -144,11 +146,12 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	@Override
 	protected void onPause()
 	{
+		cmdKeepScreenOnDisable();
 		Surface.PauseRenderer();
-		sensorAccelerometerDisable();
-		sensorMagnetometerDisable();
-		sensorGpsDisable();
-		sensorGyroscopeDisable();
+		cmdAccelerometerDisable();
+		cmdMagnetometerDisable();
+		cmdGpsDisable();
+		cmdGyroscopeDisable();
 		super.onPause();
 	}
 
@@ -314,10 +317,38 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	}
 
 	/*
+	 * KeepScreenOn interface
+	 */
+
+	private void cmdKeepScreenOnEnable()
+	{
+		try
+		{
+			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "exception: " + e);
+		}
+	}
+
+	private void cmdKeepScreenOnDisable()
+	{
+		try
+		{
+			getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "exception: " + e);
+		}
+	}
+
+	/*
 	 * SensorEventListener interface
 	 */
 
-	private void sensorAccelerometerEnable()
+	private void cmdAccelerometerEnable()
 	{
 		if(mAccelerometer == null)
 		{
@@ -332,7 +363,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
-	private void sensorMagnetometerEnable()
+	private void cmdMagnetometerEnable()
 	{
 		if(mMagnetic == null)
 		{
@@ -347,7 +378,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
-	private void sensorGyroscopeEnable()
+	private void cmdGyroscopeEnable()
 	{
 		if(mGyroscope == null)
 		{
@@ -362,7 +393,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
-	private void sensorAccelerometerDisable()
+	private void cmdAccelerometerDisable()
 	{
 		if(mAccelerometer != null)
 		{
@@ -372,7 +403,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
-	private void sensorMagnetometerDisable()
+	private void cmdMagnetometerDisable()
 	{
 		if(mMagnetic != null)
 		{
@@ -382,7 +413,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
-	private void sensorGyroscopeDisable()
+	private void cmdGyroscopeDisable()
 	{
 		if(mGyroscope != null)
 		{
@@ -428,7 +459,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	 * LocationListener interface
 	 */
 
-	private void sensorGpsEnable()
+	private void cmdGpsEnable()
 	{
 		LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
@@ -449,7 +480,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		}
 	}
 
-	private void sensorGpsDisable()
+	private void cmdGpsDisable()
 	{
 		try
 		{
@@ -495,35 +526,43 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		int cmd = msg.what;
 		if(cmd == LOAX_CMD_ACCELEROMETER_ENABLE)
 		{
-			sensorAccelerometerEnable();
+			cmdAccelerometerEnable();
 		}
 		else if(cmd == LOAX_CMD_ACCELEROMETER_DISABLE)
 		{
-			sensorAccelerometerDisable();
+			cmdAccelerometerDisable();
 		}
 		else if(cmd == LOAX_CMD_MAGNETOMETER_ENABLE)
 		{
-			sensorMagnetometerEnable();
+			cmdMagnetometerEnable();
 		}
 		else if(cmd == LOAX_CMD_MAGNETOMETER_DISABLE)
 		{
-			sensorMagnetometerDisable();
+			cmdMagnetometerDisable();
 		}
 		else if(cmd == LOAX_CMD_GPS_ENABLE)
 		{
-			sensorGpsEnable();
+			cmdGpsEnable();
 		}
 		else if(cmd == LOAX_CMD_GPS_DISABLE)
 		{
-			sensorGpsDisable();
+			cmdGpsDisable();
 		}
 		else if(cmd == LOAX_CMD_GYROSCOPE_ENABLE)
 		{
-			sensorGyroscopeEnable();
+			cmdGyroscopeEnable();
 		}
 		else if(cmd == LOAX_CMD_GYROSCOPE_DISABLE)
 		{
-			sensorGyroscopeDisable();
+			cmdGyroscopeDisable();
+		}
+		else if(cmd == LOAX_CMD_KEEPSCREENON_ENABLE)
+		{
+			cmdKeepScreenOnEnable();
+		}
+		else if(cmd == LOAX_CMD_GYROSCOPE_DISABLE)
+		{
+			cmdKeepScreenOnDisable();
 		}
 		return true;
 	}
