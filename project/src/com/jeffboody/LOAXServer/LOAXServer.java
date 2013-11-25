@@ -40,6 +40,7 @@ import android.os.Handler.Callback;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.InputDevice;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import com.jeffboody.a3d.A3DSurfaceView;
@@ -126,11 +127,6 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		A3DResource r = new A3DResource(this, R.raw.timestamp);
 		r.Add(R.raw.whitrabt, "whitrabt.tex.gz");
 
-		// Make window fullscreen
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-		                     WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
 		Renderer = new A3DNativeRenderer(this);
 		Surface  = new A3DSurfaceView(Renderer, r, this);
 		setContentView(Surface);
@@ -163,6 +159,21 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		Renderer = null;
 		mHandler = null;
 		super.onDestroy();
+	}
+
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus)
+	{
+		super.onWindowFocusChanged(hasFocus);
+		if(hasFocus)
+		{
+			Surface.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE          |
+			                              View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+			                              View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN      |
+			                              View.SYSTEM_UI_FLAG_HIDE_NAVIGATION        |
+			                              View.SYSTEM_UI_FLAG_FULLSCREEN             |
+			                              View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+		}
 	}
 
 	private static boolean isGameKey(int keycode)
