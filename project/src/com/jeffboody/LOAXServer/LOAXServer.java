@@ -37,6 +37,7 @@ import android.location.LocationListener;
 import android.os.Message;
 import android.os.Handler;
 import android.os.Handler.Callback;
+import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.InputDevice;
@@ -73,23 +74,29 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	 * Native interface
 	 */
 
-	private native void NativeKeyDown(int keycode, int meta);
-	private native void NativeKeyUp(int keycode, int meta);
-	private native void NativeButtonDown(int id, int keycode);
-	private native void NativeButtonUp(int id, int keycode);
-	private native void NativeAxisMove(int id, int axis, float value);
+	private native void NativeKeyDown(int keycode, int meta, double utime);
+	private native void NativeKeyUp(int keycode, int meta, double utime);
+	private native void NativeButtonDown(int id, int keycode, double utime);
+	private native void NativeButtonUp(int id, int keycode, double utime);
+	private native void NativeAxisMove(int id, int axis,
+	                                   float value, double utime);
 	private native void NativeTouch(int action, int count,
 	                                float x0, float y0,
 	                                float x1, float y1,
 	                                float x2, float y2,
-	                                float x3, float y3);
-	private native void NativeAccelerometer(float ax, float ay, float az,
-	                                        int   rotation);
-	private native void NativeGyroscope(float ax, float ay, float az);
-	private native void NativeMagnetometer(float mx, float my, float mz);
+	                                float x3, float y3,
+	                                double utime);
+	private native void NativeAccelerometer(float ax, float ay,
+	                                        float az, int rotation,
+	                                        double utime);
+	private native void NativeGyroscope(float ax, float ay, float az,
+	                                    double utime);
+	private native void NativeMagnetometer(float mx, float my,
+	                                       float mz, double utime);
 	private native void NativeGps(double lat, double lon,
 	                              float accuracy, float altitude,
-	                              float speed, float bearing);
+	                              float speed, float bearing,
+	                              double utime);
 
 	private static final int LOAX_CMD_ACCELEROMETER_ENABLE  = 0x00010000;
 	private static final int LOAX_CMD_ACCELEROMETER_DISABLE = 0x00010001;
@@ -101,6 +108,14 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private static final int LOAX_CMD_GYROSCOPE_DISABLE     = 0x00010007;
 	private static final int LOAX_CMD_KEEPSCREENON_ENABLE   = 0x00010008;
 	private static final int LOAX_CMD_KEEPSCREENON_DISABLE  = 0x00010009;
+
+	private static double getUtime(double t0)
+	{
+		// convert "uptime" timestamp to UTC/us timestamp
+		double now = (double) System.currentTimeMillis();
+		double t1  = (double) SystemClock.uptimeMillis();
+		return 1000.0*(now + t0 - t1);
+	}
 
 	private static void CallbackCmd(int cmd)
 	{
@@ -193,15 +208,16 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event)
 	{
-		int ascii = event.getUnicodeChar(0);
-		int meta  = event.getMetaState();
+		int    ascii = event.getUnicodeChar(0);
+		int    meta  = event.getMetaState();
+		double utime = getUtime(event.getEventTime());
 		if((ascii > 0) && (ascii < 128))
 		{
-			NativeKeyDown(ascii, meta);
+			NativeKeyDown(ascii, meta, utime);
 		}
 		else if(isGameKey(keycode))
 		{
-			NativeButtonDown(event.getDeviceId(), keycode);
+			NativeButtonDown(event.getDeviceId(), keycode, utime);
 		}
 		return true;
 	}
@@ -209,15 +225,16 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	@Override
 	public boolean onKeyUp(int keycode, KeyEvent event)
 	{
-		int ascii = event.getUnicodeChar(0);
-		int meta  = event.getMetaState();
+		int    ascii = event.getUnicodeChar(0);
+		int    meta  = event.getMetaState();
+		double utime = getUtime(event.getEventTime());
 		if((ascii > 0) && (ascii < 128))
 		{
-			NativeKeyUp(ascii, meta);
+			NativeKeyUp(ascii, meta, utime);
 		}
 		else if(isGameKey(keycode))
 		{
-			NativeButtonUp(event.getDeviceId(), keycode);
+			NativeButtonUp(event.getDeviceId(), keycode, utime);
 		}
 		return true;
 	}
@@ -225,9 +242,10 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	@Override
 	public boolean onGenericMotionEvent(MotionEvent event)
 	{
-		int source = event.getSource();
-		int action = event.getAction();
-		int id     = event.getDeviceId();
+		int    source = event.getSource();
+		int    action = event.getAction();
+		int    id     = event.getDeviceId();
+		double utime  = getUtime(event.getEventTime());
 		if((source & InputDevice.SOURCE_CLASS_JOYSTICK) != 0)
 		{
 			if(action == MotionEvent.ACTION_MOVE)
@@ -240,22 +258,22 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 
 				if(ax1 != AX1)
 				{
-					NativeAxisMove(id, MotionEvent.AXIS_X, ax1);
+					NativeAxisMove(id, MotionEvent.AXIS_X, ax1, utime);
 					AX1 = ax1;
 				}
 				if(ay1 != AY1)
 				{
-					NativeAxisMove(id, MotionEvent.AXIS_Y,  ay1);
+					NativeAxisMove(id, MotionEvent.AXIS_Y, ay1, utime);
 					AY1 = ay1;
 				}
 				if(ax2 != AX2)
 				{
-					NativeAxisMove(id, MotionEvent.AXIS_Z,  ax2);
+					NativeAxisMove(id, MotionEvent.AXIS_Z, ax2, utime);
 					AX2 = ax2;
 				}
 				if(ay2 != AY2)
 				{
-					NativeAxisMove(id, MotionEvent.AXIS_RZ, ay2);
+					NativeAxisMove(id, MotionEvent.AXIS_RZ, ay2, utime);
 					AY2 = ay2;
 				}
 				return true;
@@ -269,16 +287,16 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	{
 		try
 		{
-			int action = event.getAction();
-			int count  = event.getPointerCount();
-
+			int    action = event.getAction();
+			int    count  = event.getPointerCount();
+			double utime  = getUtime(event.getEventTime());
 			if(count == 1)
 			{
 				NativeTouch(action, count,
 				            event.getX(), event.getY(),
 				            0.0f, 0.0f,
 				            0.0f, 0.0f,
-				            0.0f, 0.0f);
+				            0.0f, 0.0f, utime);
 			}
 			else if(count == 2)
 			{
@@ -288,7 +306,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 				            event.getX(event.findPointerIndex(1)),
 				            event.getY(event.findPointerIndex(1)),
 				            0.0f, 0.0f,
-				            0.0f, 0.0f);
+				            0.0f, 0.0f, utime);
 			}
 			else if(count == 3)
 			{
@@ -299,7 +317,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 				            event.getY(event.findPointerIndex(1)),
 				            event.getX(event.findPointerIndex(2)),
 				            event.getY(event.findPointerIndex(2)),
-				            0.0f, 0.0f);
+				            0.0f, 0.0f, utime);
 			}
 			else if(count >= 4)
 			{
@@ -311,7 +329,8 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 				            event.getX(event.findPointerIndex(2)),
 				            event.getY(event.findPointerIndex(2)),
 				            event.getX(event.findPointerIndex(3)),
-				            event.getY(event.findPointerIndex(3)));
+				            event.getY(event.findPointerIndex(3)),
+				            utime);
 			}
 			else
 			{
@@ -437,28 +456,28 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	public void onSensorChanged(SensorEvent event)
 	{
 		boolean update_orientation = false;
-
+		double  utime              = (double) event.timestamp/1000.0;
 		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
 		{
 			int   r  = 90*getWindowManager().getDefaultDisplay().getRotation();
 			float ax = event.values[0];
 			float ay = event.values[1];
 			float az = event.values[2];
-			NativeAccelerometer(ax, ay, az, r);
+			NativeAccelerometer(ax, ay, az, r, utime);
 		}
 		else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
 		{
 			float mx = event.values[0];
 			float my = event.values[1];
 			float mz = event.values[2];
-			NativeMagnetometer(mx, my, mz);
+			NativeMagnetometer(mx, my, mz, utime);
 		}
 		else if(event.sensor.getType() == Sensor.TYPE_GYROSCOPE)
 		{
 			float ax = event.values[0];
 			float ay = event.values[1];
 			float az = event.values[2];
-			NativeGyroscope(ax, ay, az);
+			NativeGyroscope(ax, ay, az, utime);
 		}
 	}
 
@@ -506,14 +525,14 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 
 	public void onLocationChanged(Location location)
 	{
-		double lat     = location.getLatitude();
-		double lon     = location.getLongitude();
-		float accuracy = location.getAccuracy();
-		float altitude = (float) location.getAltitude();
-		float speed    = location.getSpeed();
-		float bearing  = location.getBearing();
-
-		NativeGps(lat, lon, accuracy, altitude, speed, bearing);
+		double lat      = location.getLatitude();
+		double lon      = location.getLongitude();
+		float  accuracy = location.getAccuracy();
+		float  altitude = (float) location.getAltitude();
+		float  speed    = location.getSpeed();
+		float  bearing  = location.getBearing();
+		double utime    = 1000.0*(double) location.getTime();
+		NativeGps(lat, lon, accuracy, altitude, speed, bearing, utime);
 	}
 
 	public void onProviderDisabled(String provider)

@@ -239,58 +239,58 @@ JNIEXPORT int JNICALL Java_com_jeffboody_a3d_A3DNativeRenderer_NativeClientVersi
 	return 2;
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyDown(JNIEnv* env, jobject  obj, jint keycode, jint meta)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyDown(JNIEnv* env, jobject  obj, jint keycode, jint meta, jdouble utime)
 {
 	assert(env);
-	LOGD("debug keycode=0x%X, meta=0x%X", keycode, meta);
+	LOGD("debug keycode=0x%X, meta=0x%X, utime=%lf", keycode, meta, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_keydown(loax_renderer->server, keycode, meta);
+		loax_server_keydown(loax_renderer->server, keycode, meta, utime);
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyUp(JNIEnv* env, jobject  obj, jint keycode, jint meta)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeKeyUp(JNIEnv* env, jobject  obj, jint keycode, jint meta, jdouble utime)
 {
 	assert(env);
-	LOGD("debug keycode=0x%X, meta=0x%X", keycode, meta);
+	LOGD("debug keycode=0x%X, meta=0x%X, utime=%lf", keycode, meta, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_keyup(loax_renderer->server, keycode, meta);
+		loax_server_keyup(loax_renderer->server, keycode, meta, utime);
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonDown(JNIEnv* env, jobject  obj, jint id, jint keycode)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonDown(JNIEnv* env, jobject  obj, jint id, jint keycode, jdouble utime)
 {
 	assert(env);
-	LOGD("debug id=%i, keycode=0x%X", id, keycode);
+	LOGD("debug id=%i, keycode=0x%X, utime=%lf", id, keycode, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_buttondown(loax_renderer->server, id, keycode);
+		loax_server_buttondown(loax_renderer->server, id, keycode, utime);
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonUp(JNIEnv* env, jobject  obj, jint id, jint keycode)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeButtonUp(JNIEnv* env, jobject  obj, jint id, jint keycode, jdouble utime)
 {
 	assert(env);
-	LOGD("debug id=%i, keycode=0x%X", id, keycode);
+	LOGD("debug id=%i, keycode=0x%X, utime=%lf", id, keycode, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_buttonup(loax_renderer->server, id, keycode);
+		loax_server_buttonup(loax_renderer->server, id, keycode, utime);
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeAxisMove(JNIEnv* env, jobject obj, jint id, jint axis, jfloat value)
+JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeAxisMove(JNIEnv* env, jobject obj, jint id, jint axis, jfloat value, jdouble utime)
 {
 	assert(env);
-	LOGD("debug id=%i, axis=0x%X, value=%f", id, axis, value);
+	LOGD("debug id=%i, axis=0x%X, value=%f, utime=%lf", id, axis, value, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_axismove(loax_renderer->server, id, axis, value);
+		loax_server_axismove(loax_renderer->server, id, axis, value, utime);
 	}
 }
 
@@ -298,69 +298,70 @@ JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeTouch(JNIE
                                                                             jfloat x0, jfloat y0,
                                                                             jfloat x1, jfloat y1,
                                                                             jfloat x2, jfloat y2,
-                                                                            jfloat x3, jfloat y3)
+                                                                            jfloat x3, jfloat y3,
+                                                                            jdouble utime)
 {
 	assert(env);
-	LOGD("debug action=0x%X, count=%i", action, count);
+	LOGD("debug action=0x%X, count=%i, utime=%lf", action, count, utime);
 
 	if(loax_renderer)
 	{
 		// error handling is in loax_server_touch
 		float coord[8] = { x0, y0, x1, y1, x2, y2, x3, y3 };
-		loax_server_touch(loax_renderer->server, action, count, coord);
+		loax_server_touch(loax_renderer->server, action, count, coord, utime);
 	}
 }
 
 JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeAccelerometer(JNIEnv* env, jobject  obj,
                                                                                     jfloat ax, jfloat ay, jfloat az,
-                                                                                    jint rotation)
+                                                                                    jint rotation, jdouble utime)
 {
 	assert(env);
 	LOGD("debug ax=%f, ay=%f, az=%f", ax, ay, az);
-	LOGD("debug rotation=%i", rotation);
+	LOGD("debug rotation=%i, utime=%lf", rotation, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_accelerometer(loax_renderer->server, ax, ay, az, rotation);
+		loax_server_accelerometer(loax_renderer->server, ax, ay, az, rotation, utime);
 	}
 }
 
 JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeMagnetometer(JNIEnv* env, jobject  obj,
-                                                                                   jfloat mx, jfloat my, jfloat mz)
+                                                                                   jfloat mx, jfloat my, jfloat mz, jdouble utime)
 {
 	assert(env);
-	LOGD("debug mx=%f, my=%f, mz=%f", mx, my, mz);
+	LOGD("debug mx=%f, my=%f, mz=%f, utime=%lf", mx, my, mz, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_magnetometer(loax_renderer->server, mx, my, mz);
+		loax_server_magnetometer(loax_renderer->server, mx, my, mz, utime);
 	}
 }
 
 JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeGps(JNIEnv* env, jobject  obj,
                                                                          jdouble lat, jdouble lon,
                                                                          jfloat accuracy, jfloat altitude,
-                                                                         jfloat speed, jfloat bearing)
+                                                                         jfloat speed, jfloat bearing, jdouble utime)
 {
 	assert(env);
 	LOGD("debug lat=%lf, lon=%lf", lat, lon);
-	LOGD("debug accuracy=%f, altitude=%f, speed=%f, bearing=%f",
-	     accuracy, altitude, speed, bearing);
+	LOGD("debug accuracy=%f, altitude=%f, speed=%f, bearing=%f, utime=%lf",
+	     accuracy, altitude, speed, bearing, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_gps(loax_renderer->server, lat, lon, accuracy, altitude, speed, bearing);
+		loax_server_gps(loax_renderer->server, lat, lon, accuracy, altitude, speed, bearing, utime);
 	}
 }
 
 JNIEXPORT void JNICALL Java_com_jeffboody_LOAXServer_LOAXServer_NativeGyroscope(JNIEnv* env, jobject  obj,
-                                                                                jfloat ax, jfloat ay, jfloat az)
+                                                                                jfloat ax, jfloat ay, jfloat az, jdouble utime)
 {
 	assert(env);
-	LOGD("debug ax=%f, ay=%f, az=%f", ax, ay, az);
+	LOGD("debug ax=%f, ay=%f, az=%f, utime=%lf", ax, ay, az, utime);
 
 	if(loax_renderer)
 	{
-		loax_server_gyroscope(loax_renderer->server, ax, ay, az);
+		loax_server_gyroscope(loax_renderer->server, ax, ay, az, utime);
 	}
 }
