@@ -44,6 +44,7 @@ import android.view.InputDevice;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import java.lang.Math;
 import com.jeffboody.a3d.A3DSurfaceView;
 import com.jeffboody.a3d.A3DNativeRenderer;
 import com.jeffboody.a3d.A3DResource;
@@ -60,6 +61,8 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private float AY1 = 0.0F;
 	private float AX2 = 0.0F;
 	private float AY2 = 0.0F;
+	private float AHX = 0.0F;
+	private float AHY = 0.0F;
 
 	// sensors
 	private Sensor  mAccelerometer;
@@ -205,6 +208,15 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		return KeyEvent.isGamepadButton(keycode);
 	}
 
+	private static float denoiseAxis(float value)
+	{
+		if(Math.abs(value) < 0.05F)
+		{
+			return 0.0F;
+		}
+		return value;
+	}
+
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event)
 	{
@@ -251,10 +263,12 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 			if(action == MotionEvent.ACTION_MOVE)
 			{
 				// process the joystick movement...
-				float ax1 = event.getAxisValue(MotionEvent.AXIS_X);
-				float ay1 = event.getAxisValue(MotionEvent.AXIS_Y);
-				float ax2 = event.getAxisValue(MotionEvent.AXIS_Z);
-				float ay2 = event.getAxisValue(MotionEvent.AXIS_RZ);
+				float ax1 = denoiseAxis(event.getAxisValue(MotionEvent.AXIS_X));
+				float ay1 = denoiseAxis(event.getAxisValue(MotionEvent.AXIS_Y));
+				float ax2 = denoiseAxis(event.getAxisValue(MotionEvent.AXIS_Z));
+				float ay2 = denoiseAxis(event.getAxisValue(MotionEvent.AXIS_RZ));
+				float ahx = denoiseAxis(event.getAxisValue(MotionEvent.AXIS_HAT_X));
+				float ahy = denoiseAxis(event.getAxisValue(MotionEvent.AXIS_HAT_Y));
 
 				if(ax1 != AX1)
 				{
@@ -275,6 +289,16 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 				{
 					NativeAxisMove(id, MotionEvent.AXIS_RZ, ay2, utime);
 					AY2 = ay2;
+				}
+				if(ahx != AHX)
+				{
+					NativeAxisMove(id, MotionEvent.AXIS_HAT_X, ahx, utime);
+					AHX = ahx;
+				}
+				if(ahy != AHY)
+				{
+					NativeAxisMove(id, MotionEvent.AXIS_HAT_Y, ahy, utime);
+					AHY = ahy;
 				}
 				return true;
 			}
