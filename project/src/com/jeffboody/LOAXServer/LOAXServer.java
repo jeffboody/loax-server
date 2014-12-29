@@ -112,6 +112,20 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private static final int LOAX_CMD_KEEPSCREENON_ENABLE   = 0x00010008;
 	private static final int LOAX_CMD_KEEPSCREENON_DISABLE  = 0x00010009;
 
+	private static final int LOAX_KEY_ENTER     = 0x00A;
+	private static final int LOAX_KEY_ESCAPE    = 0x01B;
+	private static final int LOAX_KEY_BACKSPACE = 0x008;
+	private static final int LOAX_KEY_DELETE    = 0x07F;
+	private static final int LOAX_KEY_UP        = 0x100;
+	private static final int LOAX_KEY_DOWN      = 0x101;
+	private static final int LOAX_KEY_LEFT      = 0x102;
+	private static final int LOAX_KEY_RIGHT     = 0x103;
+	private static final int LOAX_KEY_HOME      = 0x104;
+	private static final int LOAX_KEY_END       = 0x105;
+	private static final int LOAX_KEY_PGUP      = 0x106;
+	private static final int LOAX_KEY_PGDOWN    = 0x107;
+	private static final int LOAX_KEY_INSERT    = 0x108;
+
 	private static double getUtime(double t0)
 	{
 		// convert "uptime" timestamp to UTC/us timestamp
@@ -208,6 +222,64 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		return KeyEvent.isGamepadButton(keycode);
 	}
 
+	private static int getLoaxKey(int keycode, KeyEvent event)
+	{
+		int ascii = event.getUnicodeChar(0);
+		if(keycode == KeyEvent.KEYCODE_ENTER)
+		{
+			return LOAX_KEY_ENTER;
+		}
+		else if(keycode == KeyEvent.KEYCODE_ESCAPE)
+		{
+			return LOAX_KEY_ESCAPE;
+		}
+		else if(keycode == KeyEvent.KEYCODE_DEL)
+		{
+			return LOAX_KEY_BACKSPACE;
+		}
+		else if(keycode == KeyEvent.KEYCODE_FORWARD_DEL)
+		{
+			return LOAX_KEY_DELETE;
+		}
+		else if(keycode == KeyEvent.KEYCODE_DPAD_UP)
+		{
+			return LOAX_KEY_UP;
+		}
+		else if(keycode == KeyEvent.KEYCODE_DPAD_DOWN)
+		{
+			return LOAX_KEY_DOWN;
+		}
+		else if(keycode == KeyEvent.KEYCODE_DPAD_LEFT)
+		{
+			return LOAX_KEY_LEFT;
+		}
+		else if(keycode == KeyEvent.KEYCODE_DPAD_RIGHT)
+		{
+			return LOAX_KEY_RIGHT;
+		}
+		else if(keycode == KeyEvent.KEYCODE_MOVE_HOME)
+		{
+			return LOAX_KEY_HOME;
+		}
+		else if(keycode == KeyEvent.KEYCODE_MOVE_END)
+		{
+			return LOAX_KEY_END;
+		}
+		else if(keycode == KeyEvent.KEYCODE_PAGE_UP)
+		{
+			return LOAX_KEY_PGUP;
+		}
+		else if(keycode == KeyEvent.KEYCODE_PAGE_DOWN)
+		{
+			return LOAX_KEY_PGDOWN;
+		}
+		else if((ascii > 0) && (ascii < 128))
+		{
+			return ascii;
+		}
+		return 0;
+	}
+
 	private static float denoiseAxis(float value)
 	{
 		if(Math.abs(value) < 0.05F)
@@ -220,34 +292,40 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event)
 	{
-		int    ascii = event.getUnicodeChar(0);
+		int    ascii = getLoaxKey(keycode, event);
 		int    meta  = event.getMetaState();
 		double utime = getUtime(event.getEventTime());
-		if((ascii > 0) && (ascii < 128))
+
+		if(ascii > 0)
 		{
 			NativeKeyDown(ascii, meta, utime);
 		}
-		else if(isGameKey(keycode))
+
+		if(isGameKey(keycode))
 		{
 			NativeButtonDown(event.getDeviceId(), keycode, utime);
 		}
+
 		return true;
 	}
 
 	@Override
 	public boolean onKeyUp(int keycode, KeyEvent event)
 	{
-		int    ascii = event.getUnicodeChar(0);
+		int    ascii = getLoaxKey(keycode, event);
 		int    meta  = event.getMetaState();
 		double utime = getUtime(event.getEventTime());
-		if((ascii > 0) && (ascii < 128))
+
+		if(ascii > 0)
 		{
 			NativeKeyUp(ascii, meta, utime);
 		}
-		else if(isGameKey(keycode))
+
+		if(isGameKey(keycode))
 		{
 			NativeButtonUp(event.getDeviceId(), keycode, utime);
 		}
+
 		return true;
 	}
 
