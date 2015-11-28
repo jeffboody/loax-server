@@ -68,7 +68,7 @@ static void cmd_fn(int cmd)
 		return;
 	}
 
-	(*env)->CallVoidMethod(env, cls, mid, cmd);
+	(*env)->CallStaticVoidMethod(env, cls, mid, cmd);
 }
 
 /***********************************************************
@@ -188,10 +188,10 @@ JNIEXPORT void JNICALL Java_com_jeffboody_a3d_A3DNativeRenderer_NativeCreate(JNI
 	return;
 
 	// failure
-	fail_load:
-		g_vm = NULL;
 	fail_renderer:
 		a3d_GL_unload();
+	fail_load:
+		g_vm = NULL;
 	return;
 }
 

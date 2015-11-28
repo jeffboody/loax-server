@@ -692,7 +692,7 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		{
 			cmdKeepScreenOnEnable();
 		}
-		else if(cmd == LOAX_CMD_GYROSCOPE_DISABLE)
+		else if(cmd == LOAX_CMD_KEEPSCREENON_DISABLE)
 		{
 			cmdKeepScreenOnDisable();
 		}
