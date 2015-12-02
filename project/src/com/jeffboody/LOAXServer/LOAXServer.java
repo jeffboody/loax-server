@@ -44,6 +44,7 @@ import android.view.InputDevice;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.media.AudioManager;
 import java.lang.Math;
 import com.jeffboody.a3d.A3DSurfaceView;
 import com.jeffboody.a3d.A3DNativeRenderer;
@@ -111,6 +112,8 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 	private static final int LOAX_CMD_GYROSCOPE_DISABLE     = 0x00010007;
 	private static final int LOAX_CMD_KEEPSCREENON_ENABLE   = 0x00010008;
 	private static final int LOAX_CMD_KEEPSCREENON_DISABLE  = 0x00010009;
+	private static final int LOAX_CMD_PLAY_CLICK            = 0x0001000A;
+	private static final int LOAX_CMD_EXIT                  = 0x0001000B;
 
 	private static final int LOAX_KEY_ENTER     = 0x00A;
 	private static final int LOAX_KEY_ESCAPE    = 0x01B;
@@ -695,6 +698,15 @@ public class LOAXServer extends Activity implements SensorEventListener, Locatio
 		else if(cmd == LOAX_CMD_KEEPSCREENON_DISABLE)
 		{
 			cmdKeepScreenOnDisable();
+		}
+		else if(cmd == LOAX_CMD_PLAY_CLICK)
+		{
+			AudioManager am = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+			am.playSoundEffect(AudioManager.FX_KEY_CLICK, 0.5F);
+		}
+		else if(cmd == LOAX_CMD_EXIT)
+		{
+			finish();
 		}
 		return true;
 	}
