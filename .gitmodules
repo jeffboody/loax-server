@@ -1,0 +1,15 @@
+[submodule "app/src/main/cpp/net"]
+	path = app/src/main/cpp/net
+	url = git@github.com:jeffboody/net
+[submodule "app/src/main/cpp/a3d"]
+	path = app/src/main/cpp/a3d
+	url = git@github.com:jeffboody/a3d-native
+[submodule "app/src/main/java/com/jeffboody/a3d"]
+	path = app/src/main/java/com/jeffboody/a3d
+	url = git@github.com:jeffboody/a3d-java
+[submodule "a3d-fonts"]
+	path = a3d-fonts
+	url = git@github.com:jeffboody/a3d-fonts
+[submodule "app/src/main/cpp/loax"]
+	path = app/src/main/cpp/loax
+	url = git@github.com:jeffboody/loax
